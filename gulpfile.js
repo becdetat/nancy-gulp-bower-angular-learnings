@@ -1,7 +1,6 @@
 'use strict';
 
 var gulp = require('gulp');
-var config = require('./gulp-config.json');
 var notify = require('gulp-notify');
 var filter = require('gulp-filter');
 var plugins = require('gulp-load-plugins')();
@@ -15,12 +14,20 @@ var gutil = plugins.loadUtils([
 var log = gutil.log;
 var colors = gutil.colors;
 
+var config = {
+	"paths": {
+		"client": "src/client/",
+		"server": "src/server/",
+		"dist": "src/client-dist"
+	}
+};
+
 // Revision and inject into index.html, then write it to the dist folder
 gulp.task('rev-and-inject', function(){
 	var index = path.join(config.paths.client, 'index.html');
 	var indexFilter = filter(['index.html']);
 
-	gulp
+	return gulp
 		// set source (/src/client/)
 		.src([].concat(index))
 		// filter to index.html
@@ -33,16 +40,17 @@ gulp.task('rev-and-inject', function(){
 
 // Just copy files to production for now
 gulp.task('build', ['rev-and-inject'], function() {
-	log('Building the optimised app');
-
 	// notify
-	return gulp.src('').pipe(notify({
-		onLast: true,
-		message: 'Deployed code!'
-	}));
+	return gulp
+		.src('')
+		.pipe(notify({
+			onLast: true,
+			message: 'Build complete'
+		}));
 });
 
 gulp.task('clean', function() {
 	log('Cleaning: ' + colors.blue(config.paths.dist));
+
 	del([].concat(config.paths.dist));
 });

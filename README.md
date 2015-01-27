@@ -228,5 +228,10 @@ The `build` task calls `rev--and-inject` before displaying a notification (using
 
 In `src/client` I've added an `index.html` just for testing. Run `gulp build`:
 
-	
+	[15:05:05] Starting 'rev-and-inject'...
+	[15:05:05] Finished 'rev-and-inject' after 24 ms
+	[15:05:05] Starting 'build'...
+	[15:05:05] gulp-notify: [Gulp notification] Build complete
+	[15:05:05] Finished 'build' after 35 ms
+
 
