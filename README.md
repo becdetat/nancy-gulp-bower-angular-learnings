@@ -54,14 +54,12 @@ Install Node and NPM. The easiest way may be via chocolatey, this does both:
 
 	cinst nodejs.install
 
-Now use NPM to install Gulp and Bower:
-
-	npm install -g bower
-	npm install -g gulp
-
-Now install them to the project??? run this in the project root `/`:
+Get NPM to create a `package.json` file in the project root by running `npm install`. Now install Bower and Gulp using NPM:
 
 	npm install --save-dev gulp
+	npm install --save-dev bower
+
+The `--save-dev` flag adds the dependencies to `package.json`. This means that when you open the repository in a new environment you can just do `npm install` to automatically install the project's NPM dependencies.
 
 
 ### Getting started with Bower
@@ -82,12 +80,9 @@ Create a file `gulpfile.js` in the project root:
 
 	var gulp = require('gulp');
 
-	gulp.task('default', function () {
-	});
-
 https://github.com/gulpjs/gulp/blob/master/docs/getting-started.md
 
-ok lets build us a gulp pipeline
+ok lets build us a gulp pipeline. Add this to `gulpfile.js`:
 
 `gulp.task()` defines a task that's available.
 
@@ -132,7 +127,106 @@ If you run `gulp hello`:
 	Hello world!
 	[10:24:49] Finished 'hello' after 135 μs
 
-We can use this to create a build pipeline. First use NPM to install [`gulp-load-plugins`](https://www.npmjs.com/package/gulp-load-plugins).
+We can use this to create a build pipeline. Remove 
+
+
+### Simple build pipeline - copy `index.html` to server
+
+I'm just going to start out with a simple build pipeline that basically copies `index.html` to the server.
+
+Install some more NPM packages. 
+
+[`gulp-load-plugins`](https://www.npmjs.com/package/gulp-load-plugins)
 
 > Loads in any gulp plugins and attaches them to the global scope, or an object of your choice.
+
+Eg.:
+	var gutil = require('gulp-load-plugins')([
+		'colors', 'env', 'log', 'pipeline'
+	]);
+
+[`gulp-notify`](https://www.npmjs.com/package/gulp-notify)
+
+	npm install --save-dev gulp-notify
+
+> gulp plugin to send messages based on Vinyl Files or Errors to Mac OS X, Linux or Windows using the node-notifier module. Fallbacks to Growl or simply logging
+
+[`gulp-filter`](https://www.npmjs.com/package/gulp-filter)
+
+	npm install --save-dev gulp-filter
+
+['chalk'](https://www.npmjs.com/package/chalk)
+
+	npm install --save-dev chalk
+
+> Terminal string styling done right
+
+[`dateformat`](https://www.npmjs.com/package/dateformat)
+
+	npm install --save-dev dateformat
+
+> A node.js package for Steven Levithan's excellent dateFormat() function.
+
+[`del`](https://www.npmjs.com/package/del)
+
+	npm install --save-dev del
+	
+> Delete files/folders using globs
+
+Whew, that's a bunch of dependencies. At the top of `gulpfile.js`, pull them in using `require()` and get some utility dependencies into scope:
+
+	var gulp = require('gulp');
+	var config = require('./gulp-config.json');
+	var notify = require('gulp-notify');
+	var filter = require('gulp-filter');
+	var plugins = require('gulp-load-plugins')();
+	var del = require('del');
+	var path = require('path');
+
+	var gutil = plugins.loadUtils([
+		'colors', 'log'
+	]);
+
+	var log = gutil.log;
+	var colors = gutil.colors;
+
+The line `var config = require('./gulp-config.json');` requires a file that doesn't exist yet. `gulp-config.json` is going to contain some file paths used by the build script.
+
+To centralise the build paths, add this next:
+
+	var config = {
+		"paths": {
+			"source": "src/client",
+			"distribution": "src/client-dist"
+		}
+	};
+
+This could be put into another file like `gulp-config.json` and pulled in with a `require()` but for now this will do.
+
+I'll split out the actual copy process into a gulp task called `rev-and-inject`. This will eventually be more involved including adding a revision number for cache busting and injecting minified and bundled resources.
+
+	gulp.task('rev-and-inject', function() {
+		var indexPath = path.join(config.paths.source, 'index.html');
+
+		return gulp
+			// set source
+			.src([].concat(indexPath))
+			// write to dest
+			.pipe(gulp.dest(config.paths.distribution))
+	});
+
+The `build` task calls `rev--and-inject` before displaying a notification (using a toast!):
+
+	gulp.task('build', function(){
+		return gulp
+			.src('')
+			.pipe(notify({
+				onLast: true,
+				message: 'Build complete'
+		}));
+	});
+
+In `src/client` I've added an `index.html` just for testing. Run `gulp build`:
+
+	
 
