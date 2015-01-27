@@ -1,7 +1,0 @@
-{
-	"paths": {
-		"client": "src/client/",
-		"server": "src/server/",
-		"dist": "src/client-dist"
-	}
-}
