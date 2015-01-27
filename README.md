@@ -3,6 +3,10 @@ Nancy, Gulp, Bower and AngularJS learnings
 
 WARNING learning in the open. These are just scratchy notes.
 
+Check out my blog series for something slightly better written:
+
+- [Hello World! It's Gulp!](http://bendetat.com/hello-world-its-gulp.html)
+
 
 ## Create the folder structure
 
@@ -127,7 +131,9 @@ If you run `gulp hello`:
 	Hello world!
 	[10:24:49] Finished 'hello' after 135 μs
 
-We can use this to create a build pipeline. Remove 
+We can use this to create a build pipeline. Empty out `gulpfile.js` and start again, partner.
+
+![](http://media.giphy.com/media/ik8lXn1EAU9JG0LKy4/giphy.gif)
 
 
 ### Simple build pipeline - copy `index.html` to server
@@ -234,4 +240,11 @@ In `src/client` I've added an `index.html` just for testing. Run `gulp build`:
 	[15:05:05] gulp-notify: [Gulp notification] Build complete
 	[15:05:05] Finished 'build' after 35 ms
 
+You can add a quick `clean` task too, which will delete the `src/client-dist` folder:
+
+	gulp.task('clean', function(){
+		log('Cleaning: ' + config.paths.distribution);
+
+		del([].concat(config.paths.distribution));
+	});
 
