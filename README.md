@@ -1,4 +1,8 @@
-Set up gulp / bower workflow with Nancy in an ASP.NET container
+Nancy, Gulp, Bower and AngularJS learnings
+==========================================
+
+WARNING learning in the open. These are just scratchy notes.
+
 
 ## Create the folder structure
 
