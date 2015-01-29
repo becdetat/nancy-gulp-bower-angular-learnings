@@ -2,6 +2,15 @@
 	"paths": {
 		"client": "src/client/",
 		"server": "src/server/",
-		"dist": "src/client-dist"
+		"destination": "src/client-dist",
+		"buildPrefix": "app",
+		"vendorcss": [
+			"bower_components/bootstrap/dist/css/bootstrap.css",
+			"bower_components/bootstrap/dist/css/bootstrap-theme.css"
+		],
+		"vendorjs": [
+			"bower_components/jquery/dist/jquery.js",
+			"bower_components/bootstrap/dist/bootstrap.js"
+		]
 	}
 }
