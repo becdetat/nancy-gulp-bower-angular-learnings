@@ -79,13 +79,31 @@ gulp.task('vendorjs', function(){
 		// stop tracking size and output it using bytediffFormatter
 		.pipe(bytediff.stop(bytediffFormatter))
 
-		// write to dest/content/js
-		.pipe(gulp.dest(path.join(config.paths.destination, 'content/js')));
+		// write to dest/content/script
+		.pipe(gulp.dest(path.join(config.paths.destination, 'content/script')));
+});
 
+gulp.task('js', function() {
+	log('Bundle, minify and copy app JS');
+
+	return gulp
+		// set source (src/**/*.js)
+		.src([path.join(config.paths.client, '**/*.js')])
+		// write to site.min.js
+		.pipe(concat('site.min.js'))
+		// start tracking size
+		.pipe(bytediff.start())
+		// uglify js
+		.pipe(uglify())
+		// stop tracking size and output it using bytediffFormatter
+		.pipe(bytediff.stop(bytediffFormatter))
+
+		// write to dest/content/script
+		.pipe(gulp.dest(path.join(config.paths.destination, 'content/script')));
 });
 
 // Revision and inject into index.html, then write it to the dist folder
-gulp.task('rev-and-inject', ['vendorcss', 'css', 'vendorjs'], function(){
+gulp.task('rev-and-inject', ['vendorcss', 'css', 'vendorjs', 'js'], function(){
 	// build up a path to index.html
 	var indexPath = path.join(config.paths.client, 'index.html');
 	// filter for index.html
@@ -119,8 +137,11 @@ gulp.task('rev-and-inject', ['vendorcss', 'css', 'vendorjs'], function(){
 			path.join(config.paths.destination, 'content/css/site.min.css')))
 		// inject into inject-vendor:js
 		.pipe(localInject(
-			path.join(config.paths.destination, 'content/js/vendor.min.js'),
+			path.join(config.paths.destination, 'content/script/vendor.min.js'),
 			'inject-vendor'))
+		// inject into inject:js
+		.pipe(localInject(
+			path.join(config.paths.destination, 'content/script/site.min.js')))
 
 		// write to dest (/src/client-build/)
 		.pipe(gulp.dest(config.paths.destination));
