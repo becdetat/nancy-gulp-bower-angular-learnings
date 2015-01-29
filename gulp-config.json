@@ -7,6 +7,10 @@
 		"vendorcss": [
 			"bower_components/bootstrap/dist/css/bootstrap.css",
 			"bower_components/bootstrap/dist/css/bootstrap-theme.css"
+		],
+		"vendorjs": [
+			"bower_components/jquery/dist/jquery.js",
+			"bower_components/bootstrap/dist/bootstrap.js"
 		]
 	}
 }

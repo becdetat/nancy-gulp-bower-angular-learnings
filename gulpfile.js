@@ -13,6 +13,7 @@ var minifyCss = require('gulp-minify-css');
 var inject = require('gulp-inject');
 var connect = require('connect');
 var serveStatic = require('serve-static');
+var uglify = require('gulp-uglify');
 
 var gutil = plugins.loadUtils([
 	'colors', 'log'
@@ -23,13 +24,13 @@ var colors = gutil.colors;
 
 
 gulp.task('vendorcss', function(){
-	log('Compressing, bundling and copying vendor CSS');
+	log('Bundle, minify and copy vendor CSS');
 
 	// search pattern for css
 	var vendorFilter = filter(['**/*.css']);
 
 	return gulp
-		// set source (vendorcss)
+		// set source
 		.src(config.paths.vendorcss)
 		// write to vendor.min.css
 		.pipe(concat('vendor.min.css'))
@@ -41,12 +42,12 @@ gulp.task('vendorcss', function(){
 		// stop tracking size and output it using bytediffFormatter
 		.pipe(bytediff.stop(bytediffFormatter))
 
-		// write to dest/content
-		.pipe(gulp.dest(path.join(config.paths.destination, 'content')));
+		// write to dest/content/css
+		.pipe(gulp.dest(path.join(config.paths.destination, 'content/css')));
 });
 
 gulp.task('css', function() {
-	log('Compessing, bundling and copying app CSS');
+	log('Bundle, minify and copy app CSS');
 
 	return gulp
 		// set source (src/**/*.css)
@@ -59,12 +60,32 @@ gulp.task('css', function() {
 		.pipe(minifyCss())
 		// stop tracking size and output it
 		.pipe(bytediff.stop(bytediffFormatter))
-		// write to dest/content
-		.pipe(gulp.dest(path.join(config.paths.destination, 'content')));
+		// write to dest/content/css
+		.pipe(gulp.dest(path.join(config.paths.destination, 'content/css')));
+});
+
+gulp.task('vendorjs', function(){
+	log("Bundle, minify and copy vendor JS");
+
+	return gulp
+		// set source
+		.src(config.paths.vendorjs)
+		// write to vendor.min.js
+		.pipe(concat('vendor.min.js'))
+		// start tracking size
+		.pipe(bytediff.start())
+		// uglify js
+		.pipe(uglify())
+		// stop tracking size and output it using bytediffFormatter
+		.pipe(bytediff.stop(bytediffFormatter))
+
+		// write to dest/content/js
+		.pipe(gulp.dest(path.join(config.paths.destination, 'content/js')));
+
 });
 
 // Revision and inject into index.html, then write it to the dist folder
-gulp.task('rev-and-inject', ['vendorcss', 'css'], function(){
+gulp.task('rev-and-inject', ['vendorcss', 'css', 'vendorjs'], function(){
 	// build up a path to index.html
 	var indexPath = path.join(config.paths.client, 'index.html');
 	// filter for index.html
@@ -89,13 +110,17 @@ gulp.task('rev-and-inject', ['vendorcss', 'css'], function(){
 		// filter to index.html
 		//.pipe(indexFilter)
 
-		// replace the inject-vendor:css section with the minified version
+		// inject into inject-vendor:css
 		.pipe(localInject(
-			path.join(config.paths.destination, 'content/vendor.min.css'), 
+			path.join(config.paths.destination, 'content/css/vendor.min.css'), 
 			'inject-vendor'))
-		// insert the site css into the head
+		// inject into inject:css 
 		.pipe(localInject(
-			path.join(config.paths.destination, 'content/site.min.css')))
+			path.join(config.paths.destination, 'content/css/site.min.css')))
+		// inject into inject-vendor:js
+		.pipe(localInject(
+			path.join(config.paths.destination, 'content/js/vendor.min.js'),
+			'inject-vendor'))
 
 		// write to dest (/src/client-build/)
 		.pipe(gulp.dest(config.paths.destination));
