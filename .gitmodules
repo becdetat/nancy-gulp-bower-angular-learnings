@@ -1,0 +1,3 @@
+[submodule "references/ng-template"]
+	path = references/ng-template
+	url = https://github.com/gertjvr/ng-template.git
