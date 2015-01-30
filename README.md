@@ -317,17 +317,16 @@ Pull in the `concat` dependency at the top of `gulpfile.js`:
 Now add the `vendorcss` task:
 
 	gulp.task('vendorcss', function(){
-	 	return gulp
-			// set source
-			.src(config.paths.vendorcss)
-			// the output will be written to dest/content/vendor.min.css
-			.pipe(concat('vendor.min.css'))
-			
-			// write to dest/content
-			.pipe(gulp.dest(path.join(config.paths.destination, 'content/css')));
+	return gulp
+		// set source
+		.src(config.paths.vendorcss)
+		// write to vendor.min.css
+		.pipe(concat('vendor.min.css'))
+		// write to dest
+		.pipe(gulp.dest(config.paths.destination));
 	});
 
-This takes all of the vendor CSS files specified in `gulp-config.json` and bundles them into `/src/site-dist/content/css/vendor.min.css`. Very exciting but it hasn't minified the CSS yet. Time for some more plugins:
+This takes all of the vendor CSS files specified in `gulp-config.json` and bundles them into `/src/site-dist/vendor.min.css`. Very exciting but it hasn't minified the CSS yet. Time for some more plugins:
 
 [`gulp-bytediff`](https://www.npmjs.com/package/gulp-bytediff)
 	
@@ -353,18 +352,18 @@ Then add the minify and bytediff steps to the pipeline (in `gulp.task('vendorcss
 	return gulp
 		// set source
 		.src(config.paths.vendorcss)
-		// the output will be written to dest/content/vendor.min.css
+		// write to vendor.min.css
 		.pipe(concat('vendor.min.css'))
- 
+
 		// start tracking size
 		.pipe(bytediff.start())
 		// minify css
 		.pipe(minifyCss())
 		// stop tracking size and output it using bytediffFormatter
 		.pipe(bytediff.stop(bytediffFormatter))
- 
-		// write to dest/content
-		.pipe(gulp.dest(path.join(config.paths.destination, 'content/css')));
+
+		// write to dest
+		.pipe(gulp.dest(config.paths.destination));
 
 The `bytediff.stop(bytediffFormatter)` uses a new function to format the file size difference. This function needs to be added:
 
@@ -391,7 +390,7 @@ Now when I run `gulp build` the CSS is minified:
 	[09:10:18] gulp-notify: [Gulp notification] Build complete
 	[09:10:18] Finished 'build' after 48 ms
 
-The `index.html` now needs a reference to the minified CSS file. It could be hard-coded to `content/vendor.min.css` but that is subject to change if the build script changes. So we need to _inject_ the path to the `vendor.min.css` artifact directly into `index.html` as it is being written.
+The `index.html` now needs a reference to the minified CSS file. It could be hard-coded to `vendor.min.css` but that is subject to change if the build script changes. So we need to _inject_ the path to the `vendor.min.css` artifact directly into `index.html` as it is being written.
 
 Install yet another plugin:
 
@@ -442,7 +441,7 @@ The inject step now needs to be added to the `rev-and-inject` task pipeline:
 
 			// inject into inject-vendor:css
 			.pipe(localInject(
-				path.join(config.paths.destination, 'content/css/vendor.min.css'),
+				path.join(config.paths.destination, 'vendor.min.css'),
 				'inject-vendor'))
 
 			.pipe(gulp.dest(config.paths.distribution))
@@ -458,7 +457,7 @@ Now in `/src/client/index.html` we just need to replace the link to `bootstrap.m
 Now, running `gulp build` should inject the correct path into `/src/client-dist/index.html`:
 
 	<!-- inject-vendor:css -->
-	<link rel="stylesheet" href="/app/content/vendor.min.css">
+	<link rel="stylesheet" href="/app/vendor.min.css">
 	<!-- endinject -->
 
 
@@ -519,7 +518,7 @@ In `gulpfile.js` add a new `css` task:
 			// stop tracking size and output it
 			.pipe(bytediff.stop(bytediffFormatter))
 			// write to dest/content
-			.pipe(gulp.dest(path.join(config.paths.destination, 'content/css')));
+			.pipe(gulp.dest(config.paths.destination));
 	});
 
 This is getting a bit familiar. Instead of using a set of explicit tasks from `gulp-config.json` I've just assumed that anything named `*.css` anywhere in the client should be injected into the static site distribution. The concatenated, minified output gets written to `/src/client-dist/content/site.min.css`. Now in the `rev-and-inject` task the `css` task needs to be added to the prerequisites:
@@ -530,8 +529,7 @@ This is getting a bit familiar. Instead of using a set of explicit tasks from `g
 And the path to the new `site.min.css` needs to be injected (this goes after the `inject-vendor:css` injection):
 
 	// inject into inject:css
-	.pipe(localInject(
-		path.join(config.paths.destination, 'content/css/site.min.css')))
+	.pipe(localInject(config.paths.destination))
 
 Note that there is no name placeholder used. This will inject into the default `inject:css` placeholder, which needs to be added to `index.html` after the existing `inject-vendor:css` placeholder:
 
@@ -580,8 +578,8 @@ Now create the `vendorjs` task:
 			// stop tracking size and output it using bytediffFormatter
 			.pipe(bytediff.stop(bytediffFormatter))
 	 
-			// write to dest/content/js
-			.pipe(gulp.dest(path.join(config.paths.destination, 'content/script')));
+			// write to dest
+			.pipe(gulp.dest(config.paths.destination));
 	});
 
 In `rev-and-inject`, the `vendorcss` prerequisite task needs to be added:
@@ -593,7 +591,7 @@ And the newly minified `content/script/vendor.min.js` needs to be injected (afte
 
 	// inject into inject-vendor:js
 	.pipe(localInject(
-		path.join(config.paths.destination, 'content/script/vendor.min.js'),
+		path.join(config.paths.destination, 'vendor.min.js'),
 		'inject-vendor'))
 
 Now the `inject-vendor:css` placeholder needs to be added to `index.html` at the end of the `<body>` element:
@@ -619,8 +617,8 @@ To support AngularJS, the site-specific JS task will need a couple of extra step
 			// stop tracking size and output it using bytediffFormatter
 			.pipe(bytediff.stop(bytediffFormatter))
 	 
-			// write to dest/content/script
-			.pipe(gulp.dest(path.join(config.paths.destination, 'content/script')));
+			// write to dest
+			.pipe(gulp.dest(config.paths.destination));
 	});
 
 In `rev-and-inject`, the `js` prerequisite task needs to be added:
@@ -632,7 +630,171 @@ And `content/script/site.min.js` needs to be injected (after the `inject-vendor:
 
 	// inject into inject:js
 	.pipe(localInject(
-		path.join(config.paths.destination, 'content/script/site.min.js')))
+		path.join(config.paths.destination, 'site.min.js')))
+
+## Fonts and images
+
+Site assets that aren't CSS or JS need to be processed as well. Fonts are pretty straightforward, I'll just copy everything in `content/fonts`:
+
+	gulp.task('fonts', function(){
+		log('Copy fonts');
+
+		return gulp
+			.src([path.join(config.paths.client, 'content/fonts/*')])
+			.pipe(gulp.dest(path.join(config.paths.destination, 'content/fonts')));
+	});
+
+Since this can be done outside of the `rev-and-inject` process, it gets added to the `build` task:
+
+	gulp.task('build', ['rev-and-inject', 'fonts'], function() {
+		// ...
+
+Images could be a straight copy as well, or you can pass them through an image optimization plugin. Install two more dependencies:
+
+[`gulp-cache](https://www.npmjs.com/package/gulp-cache)
+
+	npm install --save-dev gulp-cache
+
+> A cache proxy task for Gulp
+
+[`gulp-imagemin`](https://www.npmjs.com/package/gulp-imagemin)
+
+	npm install --save-dev gulp-imagemin
+
+> Minify PNG, JPEG, GIF and SVG images
+
+`imagemin` is an image minifier. This performs some compression on PNG images:
+
+	gulp.task('images', function(){
+		log('Compress, cache and copy images');
+
+		return gulp
+			.src([path.join(config.paths.client, 'content/images/*')])
+			.pipe(cache(imagemin({
+				optimizationLevel: 3
+			})))
+			.pipe(gulp.dest(path.join(config.paths.destination, 'content/images')));
+	});
+
+This task also gets added as a prerequisite to the `build` task:
+
+	gulp.task('build', ['rev-and-inject', 'fonts', 'images'], function() {
+		// ...
 
 
+## Revisioning and cache-busting
+
+Revisioning is a way of cache-busting (forcing the browser to reload assets) by appending a hash to the filename. Since this hash is unique for a particular revision of the file (as it is a hash of the file's contents) as long as the source file doesn't change, the revisioned file name will stay the same and will reload from the browser's cache. This uses the `gulp-rev` and `gulp-rev-replace` plugins:
+
+[`gulp-rev`](https://www.npmjs.com/package/gulp-rev)
+
+	npm install --save-dev gulp-rev
+
+> Static asset revisioning by appending content hash to filenames: unicorn.css => unicorn-098f6bcd.css
+
+[`gulp-rev-replace`](https://www.npmjs.com/package/gulp-rev-replace)
+
+	npm install --save-dev gulp-rev-replace
+
+> Rewrite occurences of filenames which have been renamed by gulp-rev
+
+Add the new dependencies to the top of `gulpfile.js`:
+
+	var rev = require('gulp-rev');
+	var revReplace = require('gulp-rev-replace');
+
+Now the `build` task gets a bit of a rewrite:
+
+	var indexFilter = filter('index.html');
+	var cssFilter = filter("**/*.min.css");
+	var jsFilter = filter("**/*.min.js");
+	var manifestFilter = filter('rev-manifest.json');
+
+	return gulp
+		// 1. set source (/src/client/)
+		.src([].concat(
+			path.join(config.paths.client, 'index.html'), 
+			path.join(config.paths.destination, '*.min.css'),
+			path.join(config.paths.destination, '*.min.js')))
+
+		// 2. add the revision to the css files
+		.pipe(cssFilter)
+		.pipe(rev())
+		.pipe(gulp.dest(config.paths.destination))
+		.pipe(cssFilter.restore())
+
+		// 3. add the revision to the js files
+		.pipe(jsFilter)
+		.pipe(rev())
+		.pipe(gulp.dest(config.paths.destination))
+		.pipe(jsFilter.restore())
+
+		// 4. inject css and js
+		.pipe(indexFilter)
+		.pipe(localInject(path.join(config.paths.destination, 'vendor.min.css'), 'inject-vendor'))
+		.pipe(localInject(path.join(config.paths.destination, 'site.min.css')))
+		.pipe(localInject(path.join(config.paths.destination, 'vendor.min.js'), 'inject-vendor'))
+		.pipe(localInject(path.join(config.paths.destination, 'site.min.js')))
+		.pipe(gulp.dest(config.paths.destination))
+		.pipe(indexFilter.restore())
+
+		// 5. substitute in new revved filenames
+		.pipe(revReplace())
+		.pipe(gulp.dest(config.paths.destination));
+
+I've numbered the stages of this pipeline. 
+
+In step 1 we select `index.html` and the `*.min.css` and `*.min.js` files.
+
+In step 2 we filter down to just the `*.min.css` files, then apply the revisioning hash to the filenames (using `rev()`):
+
+	// filter to *.min.css
+	.pipe(cssFilter)
+	// add the revision to the files
+	.pipe(rev())
+	// write the files
+	.pipe(gulp.dest(config.paths.destination))
+	// clear the filter
+	.pipe(cssFilter.restore())
+
+Step 3 is the same as step 2 except for `*.min.js`.
+
+In step 4 we filter down to just `index.html` and do the existing CSS and JS injections.
+
+In step 5 we substitute the newly revisioned filenames into `index.html`.
+
+
+## And finally...
+
+The end result looks like this:
+
+![](http://i.imgur.com/j3WY60e.png)
+
+`index.html` points to the concatenated, minified, and hashed files:
+
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<!-- inject-vendor:css -->
+			<link rel="stylesheet" href="/app/vendor.min-a491bda8.css">
+			<!-- endinject -->
+
+			<!-- inject:css -->
+			<link rel="stylesheet" href="/app/site.min-238af6ba.css">
+			<!-- endinject -->
+			</head>
+		<body>
+			<h1>Hello, world!</h1>
+
+			<!-- inject-vendor:js -->
+			<script src="/app/vendor.min-8e07c5e8.js"></script>
+			<!-- endinject -->
+
+			<!-- inject:js -->
+			<script src="/app/site.min-5b54178e.js"></script>
+			<!-- endinject -->
+		</body>
+	</html>
+
+And I'm spent. Next I'll get an AngularJS workflow happening.
 

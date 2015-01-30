@@ -14,6 +14,10 @@ var inject = require('gulp-inject');
 var connect = require('connect');
 var serveStatic = require('serve-static');
 var uglify = require('gulp-uglify');
+var cache = require('gulp-cache');
+var imagemin = require('gulp-imagemin');
+var rev = require('gulp-rev');
+var revReplace = require('gulp-rev-replace');
 
 var gutil = plugins.loadUtils([
 	'colors', 'log'
@@ -25,9 +29,6 @@ var colors = gutil.colors;
 
 gulp.task('vendorcss', function(){
 	log('Bundle, minify and copy vendor CSS');
-
-	// search pattern for css
-	var vendorFilter = filter(['**/*.css']);
 
 	return gulp
 		// set source
@@ -42,8 +43,8 @@ gulp.task('vendorcss', function(){
 		// stop tracking size and output it using bytediffFormatter
 		.pipe(bytediff.stop(bytediffFormatter))
 
-		// write to dest/content/css
-		.pipe(gulp.dest(path.join(config.paths.destination, 'content/css')));
+		// write to dest
+		.pipe(gulp.dest(config.paths.destination));
 });
 
 gulp.task('css', function() {
@@ -60,8 +61,8 @@ gulp.task('css', function() {
 		.pipe(minifyCss())
 		// stop tracking size and output it
 		.pipe(bytediff.stop(bytediffFormatter))
-		// write to dest/content/css
-		.pipe(gulp.dest(path.join(config.paths.destination, 'content/css')));
+		// write to dest
+		.pipe(gulp.dest(config.paths.destination));
 });
 
 gulp.task('vendorjs', function(){
@@ -79,8 +80,8 @@ gulp.task('vendorjs', function(){
 		// stop tracking size and output it using bytediffFormatter
 		.pipe(bytediff.stop(bytediffFormatter))
 
-		// write to dest/content/script
-		.pipe(gulp.dest(path.join(config.paths.destination, 'content/script')));
+		// write to dest
+		.pipe(gulp.dest(config.paths.destination));
 });
 
 gulp.task('js', function() {
@@ -98,16 +99,13 @@ gulp.task('js', function() {
 		// stop tracking size and output it using bytediffFormatter
 		.pipe(bytediff.stop(bytediffFormatter))
 
-		// write to dest/content/script
-		.pipe(gulp.dest(path.join(config.paths.destination, 'content/script')));
+		// write to dest
+		.pipe(gulp.dest(config.paths.destination));
 });
 
 // Revision and inject into index.html, then write it to the dist folder
 gulp.task('rev-and-inject', ['vendorcss', 'css', 'vendorjs', 'js'], function(){
-	// build up a path to index.html
-	var indexPath = path.join(config.paths.client, 'index.html');
-	// filter for index.html
-	var indexFilter = filter(['index.html']);
+	log('Rev and inject');
 
 	var localInject = function(pathGlob, name) {
 		var options = {
@@ -122,35 +120,73 @@ gulp.task('rev-and-inject', ['vendorcss', 'css', 'vendorjs', 'js'], function(){
 		return inject(gulp.src(pathGlob), options);
 	};
 
+	var indexFilter = filter('index.html');
+	var cssFilter = filter("**/*.min.css");
+	var jsFilter = filter("**/*.min.js");
+	var manifestFilter = filter('rev-manifest.json');
+
 	return gulp
 		// set source (/src/client/)
-		.src([].concat(indexPath))
+		.src([].concat(
+			path.join(config.paths.client, 'index.html'), 
+			path.join(config.paths.destination, '*.min.css'),
+			path.join(config.paths.destination, '*.min.js')))
+
+		// filter to *.min.css
+		.pipe(cssFilter)
+		// add the revision to the files
+		.pipe(rev())
+		// write the files
+		.pipe(gulp.dest(config.paths.destination))
+		// clear the filter
+		.pipe(cssFilter.restore())
+
+		// add the revision to the js files
+		.pipe(jsFilter)
+		.pipe(rev())
+		.pipe(gulp.dest(config.paths.destination))
+		.pipe(jsFilter.restore())
+
 		// filter to index.html
-		//.pipe(indexFilter)
+		.pipe(indexFilter)
+		// injections
+		.pipe(localInject(path.join(config.paths.destination, 'vendor.min.css'), 'inject-vendor'))
+		.pipe(localInject(path.join(config.paths.destination, 'site.min.css')))
+		.pipe(localInject(path.join(config.paths.destination, 'vendor.min.js'), 'inject-vendor'))
+		.pipe(localInject(path.join(config.paths.destination, 'site.min.js')))
+		// write index.html
+		.pipe(gulp.dest(config.paths.destination))
+		// clear the filter
+		.pipe(indexFilter.restore())
 
-		// inject into inject-vendor:css
-		.pipe(localInject(
-			path.join(config.paths.destination, 'content/css/vendor.min.css'), 
-			'inject-vendor'))
-		// inject into inject:css 
-		.pipe(localInject(
-			path.join(config.paths.destination, 'content/css/site.min.css')))
-		// inject into inject-vendor:js
-		.pipe(localInject(
-			path.join(config.paths.destination, 'content/script/vendor.min.js'),
-			'inject-vendor'))
-		// inject into inject:js
-		.pipe(localInject(
-			path.join(config.paths.destination, 'content/script/site.min.js')))
 
-		// write to dest (/src/client-build/)
-		.pipe(gulp.dest(config.paths.destination));
-		// remove filter
-		//.pipe(indexFilter.restore());
+		// substitute in new filenames
+		.pipe(revReplace())
+		// write the changes
+		.pipe(gulp.dest(config.paths.destination))
+		;
 });
 
-// Just copy files to production for now
-gulp.task('build', ['rev-and-inject'], function() {
+gulp.task('fonts', function(){
+	log('Copy fonts');
+
+	return gulp
+		.src([path.join(config.paths.client, 'content/fonts/*')])
+		.pipe(gulp.dest(path.join(config.paths.destination, 'content/fonts')));
+});
+
+gulp.task('images', function(){
+	log('Compress, cache and copy images');
+
+	return gulp
+		.src([path.join(config.paths.client, 'content/images/*')])
+		.pipe(cache(imagemin({
+			optimizationLevel: 3
+		})))
+		.pipe(gulp.dest(path.join(config.paths.destination, 'content/images')));
+});
+
+gulp.task('build', ['rev-and-inject', 'fonts', 'images'], function() {
 	// notify
 	return gulp
 		.src('')
@@ -176,6 +212,17 @@ gulp.task('serve', function() {
 	connect()
 		.use(serveFromPath, serveStatic(sourcePath))
 		.listen(port);
+});
+
+// hmpf. doesn't work.
+gulp.task('watch', function(){
+	log('Watching files');
+	
+	return gulp
+		.watch([config.paths.client], ['build'])
+		.on('change', function(event) {
+			log('File ' + event.path + ' was changed, rebuilding');
+		});
 });
 
 
