@@ -270,7 +270,7 @@ Now create `bower.json` by running `bower init` and following the instructions. 
 
 	bower install bootstrap --save
 
-This installs all of Bootstrap (including the seperate jQuery dependency) into `/bower_components`. It also adds a reference to the dependency in `bower.json` - if it doesn't you may have forgotten the `--save` argument.
+This installs all of Bootstrap (including the separate jQuery dependency) into `/bower_components`. It also adds a reference to the dependency in `bower.json` - if it doesn't you may have forgotten the `--save` argument.
 
 I then copied the [minimal Bootstrap HTML](http://getbootstrap.com/getting-started/#template) into `src/client/index.html`. This won't work because we're not copying or linking in the CSS correctly.
 
@@ -284,7 +284,7 @@ I'll start by adding a dependency task to the `rev-and-inject` task:
 	gulp.task('rev-and-inject', ['vendorcss'], function() {
 		// existing rev-and-inject task
 
-In the last post I declared the `config` object within `gulpfile.js`. I immediately regret this decision and move it into its own file - `gulp-config.json`. Now I need to explicitly add the CSS files that will be included in the site:
+In my last post I declared the `config` object within `gulpfile.js`. I immediately regret this decision and move it into its own file - `gulp-config.json`. Now I need to explicitly add the CSS files that will be included in the site:
 
 	{
 		"paths": {
